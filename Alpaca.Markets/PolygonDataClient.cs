@@ -82,14 +82,14 @@ namespace Alpaca.Markets
             };
 
             var map = await _httpClient.GetSingleObjectAsync
-                <JsonSymbolTypeMap, JsonSymbolTypeMap>(
-                    FakeThrottler.Instance, builder, cancellationToken)
+                    <JsonSymbolTypeMap, JsonSymbolTypeMap>(
+                        FakeThrottler.Instance, builder, cancellationToken)
                 .ConfigureAwait(false);
 
             return map.Results.StockTypes
                 .Concat(map.Results.IndexTypes)
                 .GroupBy(
-                    kvp => kvp.Key, 
+                    kvp => kvp.Key,
                     kvp => kvp.Value,
                     StringComparer.Ordinal)
                 .ToDictionary(
@@ -262,6 +262,30 @@ namespace Alpaca.Markets
             }
 
             return builder;
+        }
+
+        /// <summary>
+        /// Gets a list of ticker related news from Polygon's REST API endpoint.
+        /// </summary>
+        /// <param name="symbol">Symbol to retreive news from</param>
+        /// <param name="perpage"></param>
+        /// <param name="page"></param>
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <returns>Read-only list of historical trade information.</returns>
+        public Task<IReadOnlyList<INewsItem>> GetTickerNews(
+            string symbol, int perpage = 50, int page = 1,
+            CancellationToken cancellationToken = default)
+        {
+
+            var builder = new UriBuilder(_httpClient.BaseAddress)
+            {
+                Path = $"v1/meta/symbols/{symbol}/news",
+                Query = getDefaultPolygonApiQueryBuilder()
+                    .AddParameter("perpage", perpage)
+                    .AddParameter("page", page)
+            };
+
+            return _httpClient.GetObjectsListAsync<INewsItem, JsonPolygonNews>(FakeThrottler.Instance, builder, cancellationToken);
         }
     }
 }
